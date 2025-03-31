@@ -31,7 +31,8 @@ def start(update, context):
     keyboard = [
         [InlineKeyboardButton("Check Signal", callback_data="signal")],
         [InlineKeyboardButton("Place Trade", callback_data="trade")],
-        [InlineKeyboardButton("View Chart", callback_data="chart")]
+        [InlineKeyboardButton("View Chart", callback_data="chart")],
+        [InlineKeyboardButton("Start Hourly Updates", callback_data="start_updates")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     update.message.reply_text("Welcome to the Forex Bot! Choose an option:", reply_markup=reply_markup)
@@ -53,27 +54,37 @@ def button(update, context):
         with open("chart.png", "rb") as photo:
             query.message.reply_photo(photo=photo)
         query.edit_message_text("Chart sent!")
+    elif query.data == "start_updates":
+        query.edit_message_text("Hourly updates started! Check every 15 minutes.")
+        # We'll simulate this with a manual trigger since Telegram doesn't run loops natively
 
-# Discord task
-@tasks.loop(minutes=60)  # Check every hour
-async def check_signal():
+def manual_update(update, context):
+    df = fetch_data(pair, granularity)
+    signal = generate_signal(df)
+    generate_chart(df, pair)
+    with open("chart.png", "rb") as photo:
+        update.message.reply_photo(photo=photo)
+    update.message.reply_text(f"Manual update for {pair}: Signal = {signal}")
+
+# Discord task - 4 images per hour (every 15 minutes)
+@tasks.loop(minutes=15)
+async def post_chart():
     channel = discord_client.get_channel(int(config["discord_channel_id"]))
     df = fetch_data(pair, granularity)
     signal = generate_signal(df)
-    await channel.send(f"Current signal for {pair}: {signal}")
-    
     generate_chart(df, pair)
     with open("chart.png", "rb") as photo:
-        await channel.send(file=discord.File(photo))
+        await channel.send(f"Update for {pair}: Signal = {signal}", file=discord.File(photo))
 
 @discord_client.event
 async def on_ready():
     print(f"Logged in as {discord_client.user}")
-    if not check_signal.is_running():
-        check_signal.start()
+    if not post_chart.is_running():
+        post_chart.start()
 
 # Register Telegram handlers
 dp.add_handler(CommandHandler("start", start))
+dp.add_handler(CommandHandler("update", manual_update))  # Manual trigger for Telegram
 dp.add_handler(CallbackQueryHandler(button))
 
 # Run both bots
