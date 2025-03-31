@@ -1,0 +1,6 @@
+oandapyV20
+python-telegram-bot
+discord.py
+pandas
+matplotlib
+numpy
