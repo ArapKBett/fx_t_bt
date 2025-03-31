@@ -1,0 +1,9 @@
+{
+  "oanda_api_token": "your-oanda-api-token",
+  "oanda_account_id": "your-oanda-account-id",
+  "telegram_token": "your-telegram-bot-token",
+  "discord_token": "your-discord-bot-token",
+  "discord_channel_id": "your-discord-channel-id",
+  "pair": "EUR_USD",
+  "granularity": "H4"  # 4-hour candles
+}
