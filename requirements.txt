@@ -1,6 +1,6 @@
-oandapyV20
-python-telegram-bot
-discord.py
+requests
 pandas
 matplotlib
 numpy
+python-telegram-bot
+discord.py
