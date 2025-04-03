@@ -25,7 +25,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 discord_client = discord.Client(intents=intents)
 
-pairs = PAIRS  # All 28 pairs from trading_strategy.py
+pairs = PAIRS  # All 36 pairs (28 fiat + 8 BTC) from trading_strategy.py
 granularity = config["granularity"]
 
 async def start(update, context):
@@ -38,7 +38,8 @@ async def start(update, context):
          InlineKeyboardButton("AUD Pairs", callback_data="aud_menu")],
         [InlineKeyboardButton("CAD Pairs", callback_data="cad_menu"),
          InlineKeyboardButton("NZD Pairs", callback_data="nzd_menu")],
-        [InlineKeyboardButton("Compare All", callback_data="compare_all")]
+        [InlineKeyboardButton("BTC Pairs", callback_data="btc_menu"),
+         InlineKeyboardButton("Compare All", callback_data="compare_all")]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text("Welcome to the Forex Bot! Choose a currency or compare all pairs:", reply_markup=reply_markup)
@@ -121,7 +122,7 @@ async def button(update, context):
                 await query.message.reply_photo(photo=photo)
             keyboard = [[InlineKeyboardButton("Back", callback_data="back_to_main")]]
             reply_markup = InlineKeyboardMarkup(keyboard)
-            await query.edit_message_text("Comparison chart sent for all 28 pairs!", reply_markup=reply_markup)
+            await query.edit_message_text("Comparison chart sent for all 36 pairs!", reply_markup=reply_markup)
         
     except Exception as e:
         logger.error(f"Error in button handler: {e}")
