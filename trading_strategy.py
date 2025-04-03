@@ -12,7 +12,7 @@ HEADERS = {"Authorization": f"Bearer {config['oanda_api_token']}", "Content-Type
 # Define the 8 major currencies
 MAJOR_CURRENCIES = ["EUR", "USD", "JPY", "GBP", "CHF", "AUD", "CAD", "NZD"]
 
-# Curated list of OANDA-supported major pairs (28 unique pairs)
+# Curated list of OANDA-supported pairs (28 fiat + 8 BTC pairs)
 PAIRS = [
     "EUR_USD", "EUR_JPY", "EUR_GBP", "EUR_CHF", "EUR_AUD", "EUR_CAD", "EUR_NZD",
     "USD_JPY", "USD_CHF", "USD_CAD", "USD_AUD", "USD_NZD",
@@ -20,7 +20,8 @@ PAIRS = [
     "CHF_JPY", "CHF_AUD", "CHF_CAD", "CHF_NZD",
     "AUD_USD", "AUD_JPY", "AUD_CAD", "AUD_NZD",
     "CAD_JPY", "CAD_CHF",
-    "NZD_USD", "NZD_JPY", "NZD_CAD"
+    "NZD_USD", "NZD_JPY", "NZD_CAD",
+    "BTC_USD", "BTC_EUR", "BTC_JPY", "BTC_GBP", "BTC_CHF", "BTC_AUD", "BTC_CAD", "BTC_NZD"
 ]
 
 def fetch_data(pair, granularity="H1", count=500):
