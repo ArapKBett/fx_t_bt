@@ -25,7 +25,7 @@ intents = discord.Intents.default()
 intents.message_content = True
 discord_client = discord.Client(intents=intents)
 
-pairs = PAIRS  # All 36 pairs (28 fiat + 8 BTC) from trading_strategy.py
+pairs = PAIRS
 granularity = config["granularity"]
 
 async def start(update, context):
@@ -59,25 +59,21 @@ async def button(update, context):
     await query.answer()
     
     try:
-        # Handle main menu
         base_currency = None
         if query.data.endswith("_menu"):
             base_currency = query.data.split("_")[0].upper()
             await show_submenu(query, base_currency)
             return
         
-        # Handle back to main menu
         if query.data == "back_to_main":
             await start(update, context)
             return
         
-        # Handle back to submenu after results
         if query.data.startswith("back_to_"):
             base_currency = query.data.split("_")[2].upper()
             await show_submenu(query, base_currency)
             return
         
-        # Handle submenu actions
         elif query.data.endswith("_predictions") or query.data.endswith("_charts") or query.data.endswith("_compare"):
             base_currency = query.data.split("_")[0].upper()
             filtered_pairs = [pair for pair in pairs if pair.startswith(base_currency + "_")]
@@ -89,7 +85,9 @@ async def button(update, context):
                     message += f"{pair}:\n"
                     message += f"  Entry: {data['df']['close'].iloc[-1]:.5f}\n"
                     message += f"  SL: {data['sl']:.5f}\n"
-                    message += f"  TP: {data['tp']:.5f}\n\n"
+                    message += f"  TP: {data['tp']:.5f}\n"
+                    message += f"  Analysis: {data['analysis']}\n"
+                    message += f"  Recommendation: {data['recommendation']}\n\n"
                 keyboard = [[InlineKeyboardButton("Back", callback_data=f"back_to_{base_currency.lower()}")]]
                 reply_markup = InlineKeyboardMarkup(keyboard)
                 await query.edit_message_text(message, reply_markup=reply_markup)
@@ -97,9 +95,7 @@ async def button(update, context):
             elif query.data.endswith("_charts"):
                 for pair, data in signals.items():
                     generate_chart(data["df"], pair)
-                    rsi = data["df"]["rsi"].iloc[-1] if not data["df"].empty else 0.0
-                    macd = data["df"]["macd_hist"].iloc[-1] if not data["df"].empty else 0.0
-                    caption = f"{pair}: {data['analysis']}"
+                    caption = f"{pair}: {data['analysis']}\nRecommendation: {data['recommendation']}"
                     with open(f"chart_{pair.replace('_', '')}.png", "rb") as photo:
                         await query.message.reply_photo(photo=photo, caption=caption)
                 keyboard = [[InlineKeyboardButton("Back", callback_data=f"back_to_{base_currency.lower()}")]]
@@ -114,7 +110,6 @@ async def button(update, context):
                 reply_markup = InlineKeyboardMarkup(keyboard)
                 await query.edit_message_text(f"Comparison chart sent for {base_currency} pairs!", reply_markup=reply_markup)
         
-        # Handle top-level Compare All
         elif query.data == "compare_all":
             signals = get_all_signals(pairs, granularity)
             generate_comparison_chart(signals)
@@ -122,7 +117,7 @@ async def button(update, context):
                 await query.message.reply_photo(photo=photo)
             keyboard = [[InlineKeyboardButton("Back", callback_data="back_to_main")]]
             reply_markup = InlineKeyboardMarkup(keyboard)
-            await query.edit_message_text("Comparison chart sent for all 36 pairs!", reply_markup=reply_markup)
+            await query.edit_message_text("Comparison chart sent for all pairs!", reply_markup=reply_markup)
         
     except Exception as e:
         logger.error(f"Error in button handler: {e}")
@@ -132,11 +127,10 @@ async def manual_update(update, context):
     signals = get_all_signals(pairs, granularity)
     message = "Manual Update and Analysis:\n\n"
     for pair, data in signals.items():
-        rsi = data["df"]["rsi"].iloc[-1] if not data["df"].empty else 0.0
-        macd = data["df"]["macd_hist"].iloc[-1] if not data["df"].empty else 0.0
-        message += f"{pair}: {data['signal']} (Strength: {data['strength']:.2f}%, RSI: {rsi:.2f}, MACD: {macd:.3f})\n"
+        message += f"{pair}: {data['signal']} (Strength: {data['strength']:.2f}%)\n"
         message += f"  SL: {data['sl']:.5f}, TP: {data['tp']:.5f}\n"
-        message += f"  {data['analysis']}\n\n"
+        message += f"  Analysis: {data['analysis']}\n"
+        message += f"  Recommendation: {data['recommendation']}\n\n"
     await update.message.reply_text(message)
     generate_comparison_chart(signals)
     with open("comparison_chart.png", "rb") as photo:
@@ -152,14 +146,14 @@ async def post_update():
         signals = get_all_signals(pairs, granularity)
         
         for pair, data in signals.items():
-            generate_chart(data["df"], pair)
-            rsi = data["df"]["rsi"].iloc[-1] if not data["df"].empty else 0.0
-            macd = data["df"]["macd_hist"].iloc[-1] if not data["df"].empty else 0.0
-            message = f"{pair}: {data['signal']} (Strength: {data['strength']:.2f}%, RSI: {rsi:.2f}, MACD: {macd:.3f})\n"
-            message += f"SL: {data['sl']:.5f}, TP: {data['tp']:.5f}\n"
-            message += f"{data['analysis']}"
-            with open(f"chart_{pair.replace('_', '')}.png", "rb") as photo:
-                await channel.send(message, file=discord.File(photo))
+            if not data["df"].empty:
+                generate_chart(data["df"], pair)
+                message = f"{pair}: {data['signal']} (Strength: {data['strength']:.2f}%)\n"
+                message += f"SL: {data['sl']:.5f}, TP: {data['tp']:.5f}\n"
+                message += f"Analysis: {data['analysis']}\n"
+                message += f"Recommendation: {data['recommendation']}"
+                with open(f"chart_{pair.replace('_', '')}.png", "rb") as photo:
+                    await channel.send(message, file=discord.File(photo))
         
         generate_comparison_chart(signals)
         with open("comparison_chart.png", "rb") as photo:
